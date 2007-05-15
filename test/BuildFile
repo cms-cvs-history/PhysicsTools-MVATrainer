@@ -1,0 +1,5 @@
+<bin name=testMVATrainer file=testMVATrainer.cpp>
+  <use name=FWCore/Utilities>
+  <use name=PhysicsTools/MVAComputer>
+  <use name=PhysicsTools/MVATrainer>
+</bin>
