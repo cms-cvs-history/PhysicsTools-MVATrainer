@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <unistd.h>
 
 #include <xercesc/dom/DOM.hpp>
 
@@ -120,18 +121,19 @@ void *ProcLinear::requestObject(const std::string &name) const
 	return 0;
 }
 
+static bool exists(const char *name)
+{
+	return access(name, R_OK) == 0;
+}
+
 bool ProcLinear::load()
 {
-	std::auto_ptr<XMLDocument> xml;
-
-	try {
-		xml = std::auto_ptr<XMLDocument>(new XMLDocument(
-				trainer->trainFileName(this, "xml")));
-	} catch(...) {
+	std::string filename = trainer->trainFileName(this, "xml");
+	if (!exists(filename.c_str()))
 		return false;
-	}
 
-	DOMElement *elem = xml->getRootNode();
+	XMLDocument xml(filename);
+	DOMElement *elem = xml.getRootNode();
 	if (std::strcmp(XMLSimpleStr(elem->getNodeName()), "ProcLinear") != 0)
 		throw cms::Exception("ProcLinear")
 			<< "XML training data file has bad root node."

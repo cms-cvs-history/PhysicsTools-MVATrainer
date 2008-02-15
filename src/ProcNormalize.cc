@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <unistd.h>
 
 #include <xercesc/dom/DOM.hpp>
 
@@ -55,12 +56,24 @@ class ProcNormalize : public TrainProcessor {
 		ITER_DONE
 	};
 
-	struct PDF : public Calibration::PDF {
-		unsigned int	smooth;
-		Iteration	iteration;
+	struct PDF {
+		operator Calibration::HistogramF() const
+		{
+			Calibration::HistogramF histo(distr.size(), range);
+			for(unsigned int i = 0; i < distr.size(); i++)
+				histo.setBinContent(i + 1, distr[i]);
+			return histo;
+		}
+
+		unsigned int			smooth;
+		std::vector<double>		distr;
+		Calibration::HistogramD::Range	range;
+		Iteration			iteration;
+		bool				fillSignal;
+		bool				fillBackground;
 	};
 
-	std::vector<PDF> pdfs;
+	std::vector<PDF>	pdfs;
 };
 
 static ProcNormalize::Registry registry("ProcNormalize");
@@ -96,15 +109,25 @@ void ProcNormalize::configure(DOMElement *elem)
 		pdf.smooth = XMLDocument::readAttribute<unsigned int>(
 							elem, "smooth", 40);
 
-		try {
-			pdf.range.first = XMLDocument::readAttribute<double>(
+		pdf.fillSignal =
+			XMLDocument::readAttribute<bool>(elem, "signal", true);
+		pdf.fillBackground =
+			XMLDocument::readAttribute<bool>(elem, "background", true);
+
+		if (!pdf.fillSignal && !pdf.fillBackground)
+			throw cms::Exception("ProcNormalize")
+				<< "Filling neither background nor signal "
+				   "in config." << std::endl;
+
+		if (XMLDocument::hasAttribute(elem, "lower") &&
+		    XMLDocument::hasAttribute(elem, "upper")) {
+			pdf.range.min = XMLDocument::readAttribute<double>(
 								elem, "lower");
-			pdf.range.second = XMLDocument::readAttribute<double>(
+			pdf.range.max = XMLDocument::readAttribute<double>(
 								elem, "upper");
 			pdf.iteration = ITER_FILL;
-		} catch(...) {
+		} else
 			pdf.iteration = ITER_EMPTY;
-		}
 
 		pdfs.push_back(pdf);
 	}
@@ -120,6 +143,7 @@ Calibration::VarProcessor *ProcNormalize::getCalibration() const
 {
 	Calibration::ProcNormalize *calib = new Calibration::ProcNormalize;
 	std::copy(pdfs.begin(), pdfs.end(), std::back_inserter(calib->distr));
+	calib->categoryIdx = -1;
 	return calib;
 }
 
@@ -137,8 +161,7 @@ void ProcNormalize::trainData(const std::vector<double> *values,
 			for(std::vector<double>::const_iterator value =
 							values->begin();
 				value != values->end(); value++) {
-				iter->range.first =
-					iter->range.second = *value;
+				iter->range.min = iter->range.max = *value;
 				iter->iteration = ITER_RANGE;
 				break;
 			}
@@ -146,10 +169,10 @@ void ProcNormalize::trainData(const std::vector<double> *values,
 			for(std::vector<double>::const_iterator value =
 							values->begin();
 				value != values->end(); value++) {
-				iter->range.first =
-					std::min(iter->range.first, *value);
-				iter->range.second =
-					std::max(iter->range.second, *value);
+				iter->range.min = std::min(iter->range.min,
+				                           *value);
+				iter->range.max = std::max(iter->range.max,
+				                           *value);
 			}
 			continue;
 		    case ITER_FILL:
@@ -158,12 +181,15 @@ void ProcNormalize::trainData(const std::vector<double> *values,
 			continue;
 		}
 
+		if (!(target ? iter->fillSignal : iter->fillBackground))
+			continue;
+
 		unsigned int n = iter->distr.size() - 1;
-		double mult = 1.0 / (iter->range.second - iter->range.first);
+		double mult = 1.0 / iter->range.width();
 
 		for(std::vector<double>::const_iterator value =
 			values->begin(); value != values->end(); value++) {
-			double x = (*value - iter->range.first) * mult;
+			double x = (*value - iter->range.min) * mult;
 			if (x < 0.0)
 				x = 0.0;
 			else if (x >= 1.0)
@@ -224,18 +250,19 @@ void ProcNormalize::trainEnd()
 		trained = true;
 }
 
+static bool exists(const char *name)
+{
+	return access(name, R_OK) == 0;
+}
+
 bool ProcNormalize::load()
 {
-	std::auto_ptr<XMLDocument> xml;
-
-	try {
-		xml = std::auto_ptr<XMLDocument>(new XMLDocument(
-				trainer->trainFileName(this, "xml")));
-	} catch(...) {
+	std::string filename = trainer->trainFileName(this, "xml");
+	if (!exists(filename.c_str()))
 		return false;
-	}
 
-	DOMElement *elem = xml->getRootNode();
+	XMLDocument xml(filename);
+	DOMElement *elem = xml.getRootNode();
 	if (std::strcmp(XMLSimpleStr(elem->getNodeName()),
 	                             "ProcNormalize") != 0)
 		throw cms::Exception("ProcNormalize")
@@ -262,9 +289,9 @@ bool ProcNormalize::load()
 
 		PDF pdf;
 
-		pdf.range.first =
+		pdf.range.min =
 			XMLDocument::readAttribute<double>(elem, "lower");
-		pdf.range.second =
+		pdf.range.max =
 			XMLDocument::readAttribute<double>(elem, "upper");
 		pdf.iteration = ITER_DONE;
 
@@ -306,8 +333,8 @@ void ProcNormalize::save()
 		DOMElement *elem = doc->createElement(XMLUniStr("pdf"));
 		xml.getRootNode()->appendChild(elem);
 
-		XMLDocument::writeAttribute(elem, "lower", iter->range.first);
-		XMLDocument::writeAttribute(elem, "upper", iter->range.second);
+		XMLDocument::writeAttribute(elem, "lower", iter->range.min);
+		XMLDocument::writeAttribute(elem, "upper", iter->range.max);
 
 		for(std::vector<double>::const_iterator iter2 =
 		    iter->distr.begin(); iter2 != iter->distr.end(); iter2++) {
