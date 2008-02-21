@@ -1,0 +1,7 @@
+<bin name="mvaTreeTrainer" file="mvaTreeTrainer.cpp">
+  <use name=FWCore/Utilities>
+  <use name=PhysicsTools/MVAComputer>
+  <use name=PhysicsTools/MVATrainer>
+  <use name=rootcintex>
+  <use name=rootcore>
+</bin>
