@@ -6,7 +6,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <unistd.h>
 
 #include <xercesc/dom/DOM.hpp>
 
@@ -474,15 +473,10 @@ static void xmlParsePDF(ProcLikelihood::PDF &pdf, DOMElement *elem)
 	}
 }
 
-static bool exists(const char *name)
-{
-	return access(name, R_OK) == 0;
-}
-
 bool ProcLikelihood::load()
 {
 	std::string filename = trainer->trainFileName(this, "xml");
-	if (!exists(filename.c_str()))
+	if (!exists(filename))
 		return false;
 
 	XMLDocument xml(filename);

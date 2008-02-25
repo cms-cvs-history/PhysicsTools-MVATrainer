@@ -2,7 +2,6 @@
 #include <cstring>
 #include <vector>
 #include <memory>
-#include <unistd.h>
 
 #include <xercesc/dom/DOM.hpp>
 
@@ -169,15 +168,10 @@ void *ProcMatrix::requestObject(const std::string &name) const
 	return 0;
 }
 
-static bool exists(const char *name)
-{
-	return access(name, R_OK) == 0;
-}
-
 bool ProcMatrix::load()
 {
 	std::string filename = trainer->trainFileName(this, "xml");
-	if (!exists(filename.c_str()))
+	if (!exists(filename))
 		return false;
 
 	XMLDocument xml(filename);

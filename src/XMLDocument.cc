@@ -4,7 +4,6 @@
 #include <sstream>
 #include <memory>
 #include <string>
-#include <unistd.h>
 
 #include <xercesc/util/PlatformUtils.hpp>
 #include <xercesc/util/XMLString.hpp>
@@ -143,11 +142,6 @@ void XMLDocument::openForWrite(const std::string &fileName)
 	impl = DOMImplementationRegistry::getDOMImplementation(
 							XMLUniStr("LS"));
 	assert(impl);
-}
-
-static bool exists(const char *name)
-{
-	return access(name, R_OK) == 0;
 }
 
 DOMDocument *XMLDocument::createDocument(const std::string &root)

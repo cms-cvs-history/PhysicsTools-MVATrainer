@@ -6,7 +6,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <unistd.h>
 
 #include <xercesc/dom/DOM.hpp>
 
@@ -250,15 +249,10 @@ void ProcNormalize::trainEnd()
 		trained = true;
 }
 
-static bool exists(const char *name)
-{
-	return access(name, R_OK) == 0;
-}
-
 bool ProcNormalize::load()
 {
 	std::string filename = trainer->trainFileName(this, "xml");
-	if (!exists(filename.c_str()))
+	if (!exists(filename))
 		return false;
 
 	XMLDocument xml(filename);
