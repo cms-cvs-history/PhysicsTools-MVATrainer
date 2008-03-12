@@ -1,10 +1,13 @@
 #include <iostream>
 #include <stdlib.h>
 
+#include <TH1.h>
 #include <TFile.h>
 #include <TList.h>
 #include <TString.h>
 #include <TSystem.h>
+#include <TStyle.h>
+#include <TCanvas.h>
 #include <TObject.h>
 #include <TObjString.h>
 #include <TIterator.h>
@@ -14,6 +17,9 @@
 #include <TGClient.h>
 #include <TGResourcePool.h>
 #include <TVirtualX.h>
+#ifndef __CINT__
+#	include <GuiTypes.h>
+#endif
 
 static TFile *file = 0;
 static TStyle *style = 0;
@@ -62,8 +68,15 @@ void ViewMonitoring(TString fileName = "train_monitoring.root")
 	main->AddButton("ProcNormalize", "ShowMenu(\"ProcNormalize\")",
 	                "show normalizer PDF distributions", "button");
 
+	main->AddButton("ProcLikelihood", "ShowMenu(\"ProcLikelihood\")",
+	                "show likelihood ratio PDF distributions", "button");
+
 	main->Show();
 }
+
+void DrawInputs(TDirectory *dir);
+void DrawProcNormalize(TDirectory *dir);
+void DrawProcLikelihood(TDirectory *dir);
 
 SelectMenu::SelectMenu(TString what) : mode(what)
 {
@@ -106,10 +119,8 @@ void ShowMenu(TString what)
 	menu->MapWindow();
 
 	gVirtualX->GrabPointer((Window_t)menu->GetId(),
-	                       TGWidget::kButtonPressMask |
-	                       TGWidget::kButtonReleaseMask |
-	                       TGWidget::kPointerMotionMask,
-	                       TGWidget::kNone,
+	                       kButtonPressMask | kButtonReleaseMask |
+	                       kPointerMotionMask, kNone,
 	                       gClient->GetResourcePool()->GetGrabCursor());
 }
 
@@ -125,6 +136,8 @@ void SelectMenu::HandleMenu(Int_t id)
 		DrawInputs(dir);
 	else if (mode == "ProcNormalize")
 		DrawProcNormalize(dir);
+	else if (mode == "ProcLikelihood")
+		DrawProcLikelihood(dir);
 }
 
 class PadService {
@@ -231,7 +244,7 @@ void DrawInputs(TDirectory *dir)
 		bkg = (TH1*)bkg->Clone(name + "_tmp1");
 		bkg->Scale(1.0 / bkg->Integral("width"));
 
-		sig = (TH1*)sig->Clone(name + "_tmp1");
+		sig = (TH1*)sig->Clone(name + "_tmp2");
 		sig->Scale(1.0 / sig->Integral("width"));
 
 		Double_t x1 = Min(bkg->GetXaxis()->GetXmin(),
@@ -295,6 +308,68 @@ void DrawProcNormalize(TDirectory *dir)
 		pdf2->SetFillStyle(0);
 		pdf2->SetLineWidth(2);
 		pdf2->Draw("C same");
+
+		Save(pad, dir, name);
+	}
+}
+
+void DrawProcLikelihood(TDirectory *dir)
+{
+	TList *keys = dir->GetListOfKeys();
+	TString name = dir->GetName();
+	name = name(15, name.Length() - 15);
+
+	PadService pads(dir->GetName(), "\"" + name + "\" likelihood PDFs",
+	                keys->GetSize() / 2);
+
+	TIter iter(keys);
+	TObject *obj = 0;
+	while((obj = iter.Next()) != 0) {
+		TString name = obj->GetName();
+		if (!name.EndsWith("_sig"))
+			continue;
+		name = name(0, name.Length()-4);
+
+		TH1 *bkg = dynamic_cast<TH1*>(dir->Get(name + "_bkg"));
+		TH1 *sig = dynamic_cast<TH1*>(dir->Get(name + "_sig"));
+
+		if (!bkg || !sig)
+			continue;
+
+		TVirtualPad *pad = pads.Next();
+
+		bkg = (TH1*)bkg->Clone(name + "_tmpPL1");
+		bkg->Scale(1.0 / bkg->Integral("width"));
+
+		sig = (TH1*)sig->Clone(name + "_tmpPL12");
+		sig->Scale(1.0 / sig->Integral("width"));
+
+		Double_t x1 = Min(bkg->GetXaxis()->GetXmin(),
+		                  sig->GetXaxis()->GetXmin());
+		Double_t x2 = Max(bkg->GetXaxis()->GetXmax(),
+		                  sig->GetXaxis()->GetXmax());
+		Double_t y = Max(bkg->GetMaximum(),
+		                 sig->GetMaximum());
+		TH1F *tmp = new TH1F(name + "_tmpPL3", name, 1, x1, x2);
+		tmp->SetBit(kCanDelete);
+		tmp->SetStats(0);
+		tmp->GetYaxis()->SetRangeUser(0.0, y * 1.05);
+		tmp->SetXTitle(name);
+		tmp->Draw();
+		bkg->SetFillColor(2);
+		bkg->SetLineColor(2);
+		bkg->SetLineWidth(0);
+		bkg->SetFillStyle(3554);
+		bkg->Draw("C same");
+		bkg = bkg->Clone(name + "_tmpPL4");
+		bkg->SetFillStyle(0);
+		bkg->SetLineWidth(2);
+		bkg->Draw("C same");
+		sig->SetFillColor(0);
+		sig->SetLineColor(4);
+		sig->SetLineWidth(2);
+		sig->SetFillStyle(1);
+		sig->Draw("C same");
 
 		Save(pad, dir, name);
 	}
