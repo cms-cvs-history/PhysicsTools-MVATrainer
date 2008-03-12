@@ -187,7 +187,7 @@ namespace helper {
 	{}
 
 	template<typename T>
-	void trainerMonitoringRootClear(T *object, const boost::true_type&)
+	void trainerMonitoringRootClear(T *object, const boost::mpl::true_&)
 	{ object->SetDirectory(0); }
 }
 
