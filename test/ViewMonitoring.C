@@ -243,7 +243,6 @@ void Save(TVirtualPad *pad, TDirectory *dir, TString name = "")
 	pad->Print(baseName + ".eps");
 	pad->Print(baseName + ".pdf");
 	pad->Print(baseName + ".png");
-	pad->Print(baseName + ".svg");
 }
 
 void DrawInputs(TDirectory *dir)
