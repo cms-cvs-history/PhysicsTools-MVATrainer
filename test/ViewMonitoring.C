@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 
+#include <RVersion.h>
 #include <TH1.h>
 #include <TFile.h>
 #include <TList.h>
@@ -59,8 +60,13 @@ static void SetStyle()
 	Double_t green[] = { 0.00, 1.00, 1.00, 1.00, 0.00 };
 	Double_t blue[]  = { 1.00, 1.00, 1.00, 0.00, 0.00 };
 
+#if ROOT_VERSION_CODE >= ROOT_VERSION(5,16,0)
+	Int_t ourPalette = TColor::CreateGradientColorTable(
+					5, stops, red, green, blue, 127);
+#else
 	Int_t ourPalette = style->CreateGradientColorTable(
 					5, stops, red, green, blue, 127);
+#endif
 	style->SetNumberContours(127);
 
 	Int_t pal[127];
@@ -346,6 +352,7 @@ void DrawProcNormalize(TDirectory *dir)
 		TVirtualPad *pad = pads.Next();
 
 		pdf = (TH1*)pdf->Clone(name + "_tmpPN1");
+		pdf->SetXTitle(name);
 		pdf->SetNormFactor(pdf->Integral() / pdf->Integral("width"));
 		pdf->SetStats(0);
 		pdf->SetFillColor(4);
