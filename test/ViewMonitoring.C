@@ -238,10 +238,12 @@ void Save(TVirtualPad *pad, TDirectory *dir, TString name = "")
 	gSystem->mkdir("plots");
 	TString baseName = TString("plots/") + dir->GetName();
 	if (name.Length())
-		baseName += "." + name;
+		baseName += "_" + name;
 
 	pad->Print(baseName + ".eps");
+	pad->Print(baseName + ".pdf");
 	pad->Print(baseName + ".png");
+	pad->Print(baseName + ".svg");
 }
 
 void DrawInputs(TDirectory *dir)
@@ -298,6 +300,7 @@ void DrawInputs(TDirectory *dir)
 		sig->SetFillStyle(1);
 		sig->Draw("same");
 
+		pad->RedrawAxis();
 		Save(pad, dir, name);
 	}
 }
@@ -337,6 +340,7 @@ void DrawProcNormalize(TDirectory *dir)
 		pdf2->SetLineWidth(2);
 		pdf2->Draw("C same");
 
+		pad->RedrawAxis();
 		Save(pad, dir, name);
 	}
 }
@@ -399,6 +403,7 @@ void DrawProcLikelihood(TDirectory *dir)
 		sig->SetFillStyle(1);
 		sig->Draw("C same");
 
+		pad->RedrawAxis();
 		Save(pad, dir, name);
 	}
 }
@@ -426,5 +431,6 @@ void DrawProcMatrix(TDirectory *dir)
 	matrix->GetYaxis()->SetLabelSize(0.04);
 	matrix->Draw("colz");
 
+	pad->RedrawAxis();
 	Save(pad, dir);
 }
