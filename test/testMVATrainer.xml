@@ -34,7 +34,7 @@
 			<var source="norm" name="y"/>
 		</input>
 		<config>
-			<fill signal="true"/>
+			<fill signal="true" background="true"/>
 		</config>
 		<output>
 			<var name="rot1"/>
