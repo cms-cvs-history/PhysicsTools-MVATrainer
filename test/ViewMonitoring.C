@@ -242,17 +242,17 @@ void DrawInputs(TDirectory *dir)
 		TVirtualPad *pad = pads.Next();
 
 		bkg = (TH1*)bkg->Clone(name + "_tmp1");
-		bkg->Scale(1.0 / bkg->Integral("width"));
+		bkg->SetNormFactor(bkg->Integral() / bkg->Integral("width"));
 
 		sig = (TH1*)sig->Clone(name + "_tmp2");
-		sig->Scale(1.0 / sig->Integral("width"));
+		sig->SetNormFactor(sig->Integral() / sig->Integral("width"));
 
 		Double_t x1 = Min(bkg->GetXaxis()->GetXmin(),
 		                  sig->GetXaxis()->GetXmin());
 		Double_t x2 = Max(bkg->GetXaxis()->GetXmax(),
 		                  sig->GetXaxis()->GetXmax());
-		Double_t y = Max(bkg->GetMaximum(),
-		                 sig->GetMaximum());
+		Double_t y = Max(bkg->GetMaximum() / bkg->Integral("width"),
+		                 sig->GetMaximum() / sig->Integral("width"));
 		TH1F *tmp = new TH1F(name + "_tmp3", name, 1, x1, x2);
 		tmp->SetBit(kCanDelete);
 		tmp->SetStats(0);
@@ -296,7 +296,7 @@ void DrawProcNormalize(TDirectory *dir)
 		TVirtualPad *pad = pads.Next();
 
 		pdf = (TH1*)pdf->Clone(name + "_tmpPN1");
-		pdf->Scale(1.0 / pdf->Integral("width"));
+		pdf->SetNormFactor(pdf->Integral() / pdf->Integral("width"));
 		pdf->SetStats(0);
 		pdf->SetFillColor(4);
 		pdf->SetLineColor(4);
@@ -339,17 +339,17 @@ void DrawProcLikelihood(TDirectory *dir)
 		TVirtualPad *pad = pads.Next();
 
 		bkg = (TH1*)bkg->Clone(name + "_tmpPL1");
-		bkg->Scale(1.0 / bkg->Integral("width"));
+		bkg->SetNormFactor(bkg->Integral() / bkg->Integral("width"));
 
 		sig = (TH1*)sig->Clone(name + "_tmpPL12");
-		sig->Scale(1.0 / sig->Integral("width"));
+		sig->SetNormFactor(sig->Integral() / sig->Integral("width"));
 
 		Double_t x1 = Min(bkg->GetXaxis()->GetXmin(),
 		                  sig->GetXaxis()->GetXmin());
 		Double_t x2 = Max(bkg->GetXaxis()->GetXmax(),
 		                  sig->GetXaxis()->GetXmax());
-		Double_t y = Max(bkg->GetMaximum(),
-		                 sig->GetMaximum());
+		Double_t y = Max(bkg->GetMaximum() / bkg->Integral("width"),
+		                 sig->GetMaximum() / sig->Integral("width"));
 		TH1F *tmp = new TH1F(name + "_tmpPL3", name, 1, x1, x2);
 		tmp->SetBit(kCanDelete);
 		tmp->SetStats(0);
