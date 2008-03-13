@@ -47,8 +47,8 @@
 			<var source="rot" name="rot2"/>
 		</input>
 		<config>
-			<sigbkg/>
-			<sigbkg/>
+			<sigbkg smooth="3"/>
+			<sigbkg smooth="3"/>
 		</config>
 		<output>
 			<var name="discriminator"/>
