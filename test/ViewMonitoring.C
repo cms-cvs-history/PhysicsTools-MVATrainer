@@ -4,6 +4,7 @@
 #include <TH1.h>
 #include <TFile.h>
 #include <TList.h>
+#include <TColor.h>
 #include <TString.h>
 #include <TSystem.h>
 #include <TStyle.h>
@@ -44,6 +45,29 @@ class SelectMenu : public TGPopupMenu {
 
 static void ShowMenu(TString what);
 
+static void SetStyle()
+{
+	style = gROOT->GetStyle("Plain");
+	style->SetCanvasColor(0);
+	style->SetLineStyleString(5, "[52 12]");
+	style->SetLineStyleString(6, "[22 12]");
+	style->SetLineStyleString(7, "[22 10 7 10]");
+
+	Double_t stops[] = { 0.00, 0.25, 0.50, 0.75, 1.00 };
+	Double_t red[]   = { 0.00, 0.00, 1.00, 1.00, 1.00 };
+	Double_t green[] = { 0.00, 1.00, 1.00, 1.00, 0.00 };
+	Double_t blue[]  = { 1.00, 1.00, 1.00, 0.00, 0.00 };
+
+	Int_t ourPalette = style->CreateGradientColorTable(
+					5, stops, red, green, blue, 127);
+	style->SetNumberContours(127);
+
+	Int_t pal[127];
+	for(Int_t i = 0; i < 127; i++)
+		pal[i] = ourPalette + i;
+	style->SetPalette(127, pal);
+}
+
 void ViewMonitoring(TString fileName = "train_monitoring.root")
 {
 	file = TFile::Open(fileName);
@@ -54,11 +78,7 @@ void ViewMonitoring(TString fileName = "train_monitoring.root")
 	TControlBar *main =
 		new TControlBar("vertical", "MVA Trainer Monitoring", 0, 0);
 
-	style = gROOT->GetStyle("Plain");
-	style->SetCanvasColor(0);
-	style->SetLineStyleString(5, "[52 12]");
-	style->SetLineStyleString(6, "[22 12]");
-	style->SetLineStyleString(7, "[22 10 7 10]");
+	SetStyle();
 	style->cd();
 
 	main->AddButton("input variables", "ShowMenu(\"input\")",
@@ -71,12 +91,16 @@ void ViewMonitoring(TString fileName = "train_monitoring.root")
 	main->AddButton("ProcLikelihood", "ShowMenu(\"ProcLikelihood\")",
 	                "show likelihood ratio PDF distributions", "button");
 
+	main->AddButton("ProcMatrix", "ShowMenu(\"ProcMatrix\")",
+	                "show correlation matrix", "button");
+
 	main->Show();
 }
 
 void DrawInputs(TDirectory *dir);
 void DrawProcNormalize(TDirectory *dir);
 void DrawProcLikelihood(TDirectory *dir);
+void DrawProcMatrix(TDirectory *dir);
 
 SelectMenu::SelectMenu(TString what) : mode(what)
 {
@@ -138,6 +162,8 @@ void SelectMenu::HandleMenu(Int_t id)
 		DrawProcNormalize(dir);
 	else if (mode == "ProcLikelihood")
 		DrawProcLikelihood(dir);
+	else if (mode == "ProcMatrix")
+		DrawProcMatrix(dir);
 }
 
 class PadService {
@@ -162,7 +188,7 @@ PadService::PadService(TString name, TString title, Int_t nPlots) :
 {
 	switch (nPlots) {
 	    case 1:
-		nPadsX = 1; nPadsY = 1; width = 500; height = 0.55 * width;
+		nPadsX = 1; nPadsY = 1; width = 500; height = 1.00 * width;
 		break;
 	    case 2:
 		nPadsX = 2; nPadsY = 1; width = 600; height = 0.55 * width;
@@ -207,10 +233,12 @@ TVirtualPad *PadService::Next()
 	return pad;
 }
 
-void Save(TVirtualPad *pad, TDirectory *dir, TString name)
+void Save(TVirtualPad *pad, TDirectory *dir, TString name = "")
 {
 	gSystem->mkdir("plots");
-	TString baseName = TString("plots/") + dir->GetName() + "." + name;
+	TString baseName = TString("plots/") + dir->GetName();
+	if (name.Length())
+		baseName += "." + name;
 
 	pad->Print(baseName + ".eps");
 	pad->Print(baseName + ".png");
@@ -373,4 +401,30 @@ void DrawProcLikelihood(TDirectory *dir)
 
 		Save(pad, dir, name);
 	}
+}
+
+void DrawProcMatrix(TDirectory *dir)
+{
+	TString name = dir->GetName();
+	name = name(11, name.Length() - 11);
+
+	PadService pads(dir->GetName(),
+	                "\"" + name + "\" correlation matrix", 1);
+
+	TVirtualPad *pad = pads.Next();
+
+	pad->SetLeftMargin(0.15);
+	pad->SetRightMargin(0.13);
+	pad->SetTopMargin(0.13);
+
+	TH2 *matrix = dynamic_cast<TH2*>(dir->Get("CorrMatrix"));
+	matrix = (TH2*)matrix->Clone(name + "_tmpPM");
+	matrix->SetStats(0);
+	matrix->SetLabelOffset(0.011);
+	matrix->LabelsOption("d");
+	matrix->GetXaxis()->SetLabelSize(0.04);
+	matrix->GetYaxis()->SetLabelSize(0.04);
+	matrix->Draw("colz");
+
+	Save(pad, dir);
 }
