@@ -9,6 +9,7 @@
 #include <TSystem.h>
 #include <TStyle.h>
 #include <TCanvas.h>
+#include <TLegend.h>
 #include <TObject.h>
 #include <TObjString.h>
 #include <TIterator.h>
@@ -256,6 +257,7 @@ void DrawInputs(TDirectory *dir)
 
 	TIter iter(keys);
 	TObject *obj = 0;
+	Int_t idx = 0;
 	while((obj = iter.Next()) != 0) {
 		TString name = obj->GetName();
 		if (!name.EndsWith("_sig"))
@@ -276,16 +278,20 @@ void DrawInputs(TDirectory *dir)
 		sig = (TH1*)sig->Clone(name + "_tmp2");
 		sig->SetNormFactor(sig->Integral() / sig->Integral("width"));
 
+		Double_t scale = (++idx == 1) ? 1.275 : 1.05;
 		Double_t x1 = Min(bkg->GetXaxis()->GetXmin(),
 		                  sig->GetXaxis()->GetXmin());
 		Double_t x2 = Max(bkg->GetXaxis()->GetXmax(),
 		                  sig->GetXaxis()->GetXmax());
+		Double_t incr = (x2 - x1) * 0.01;
+		x1 -= incr;
+		x2 += incr;
 		Double_t y = Max(bkg->GetMaximum() / bkg->Integral("width"),
 		                 sig->GetMaximum() / sig->Integral("width"));
 		TH1F *tmp = new TH1F(name + "_tmp3", name, 1, x1, x2);
 		tmp->SetBit(kCanDelete);
 		tmp->SetStats(0);
-		tmp->GetYaxis()->SetRangeUser(0.0, y * 1.05);
+		tmp->GetYaxis()->SetRangeUser(0.0, y * scale);
 		tmp->SetXTitle(name);
 		tmp->Draw();
 		bkg->SetFillColor(2);
@@ -298,6 +304,20 @@ void DrawInputs(TDirectory *dir)
 		sig->SetLineWidth(2);
 		sig->SetFillStyle(1);
 		sig->Draw("same");
+
+		if (idx == 1) {
+			TLegend *leg =
+				new TLegend(0.6 - pad->GetRightMargin(),
+				            1.0 - pad->GetTopMargin() - 0.15,
+				            1.0 - pad->GetRightMargin(),
+				            1.0 - pad->GetTopMargin());
+			leg->SetFillStyle(1);
+			leg->AddEntry(sig, "Signal", "F");
+			leg->AddEntry(bkg, "Background", "F");
+			leg->SetBorderSize(1);
+			leg->SetMargin(0.3);
+			leg->Draw("same");
+		}
 
 		pad->RedrawAxis();
 		Save(pad, dir, name);
@@ -355,6 +375,7 @@ void DrawProcLikelihood(TDirectory *dir)
 
 	TIter iter(keys);
 	TObject *obj = 0;
+	Int_t idx = 0;
 	while((obj = iter.Next()) != 0) {
 		TString name = obj->GetName();
 		if (!name.EndsWith("_sig"))
@@ -375,16 +396,20 @@ void DrawProcLikelihood(TDirectory *dir)
 		sig = (TH1*)sig->Clone(name + "_tmpPL12");
 		sig->SetNormFactor(sig->Integral() / sig->Integral("width"));
 
+		Double_t scale = (++idx == 1) ? 1.275 : 1.05;
 		Double_t x1 = Min(bkg->GetXaxis()->GetXmin(),
 		                  sig->GetXaxis()->GetXmin());
 		Double_t x2 = Max(bkg->GetXaxis()->GetXmax(),
 		                  sig->GetXaxis()->GetXmax());
+		Double_t incr = (x2 - x1) * 0.01;
+		x1 -= incr;
+		x2 += incr;
 		Double_t y = Max(bkg->GetMaximum() / bkg->Integral("width"),
 		                 sig->GetMaximum() / sig->Integral("width"));
 		TH1F *tmp = new TH1F(name + "_tmpPL3", name, 1, x1, x2);
 		tmp->SetBit(kCanDelete);
 		tmp->SetStats(0);
-		tmp->GetYaxis()->SetRangeUser(0.0, y * 1.05);
+		tmp->GetYaxis()->SetRangeUser(0.0, y * scale);
 		tmp->SetXTitle(name);
 		tmp->Draw();
 		bkg->SetFillColor(2);
@@ -392,15 +417,30 @@ void DrawProcLikelihood(TDirectory *dir)
 		bkg->SetLineWidth(0);
 		bkg->SetFillStyle(3554);
 		bkg->Draw("C same");
-		bkg = bkg->Clone(name + "_tmpPL4");
-		bkg->SetFillStyle(0);
-		bkg->SetLineWidth(2);
-		bkg->Draw("C same");
+		TH1 *bkg2 = (TH1*)bkg->Clone(name + "_tmpPL4");
+		bkg2->SetFillStyle(0);
+		bkg2->SetLineWidth(2);
+		bkg2->Draw("C same");
 		sig->SetFillColor(0);
 		sig->SetLineColor(4);
 		sig->SetLineWidth(2);
 		sig->SetFillStyle(1);
 		sig->Draw("C same");
+
+		if (idx == 1) {
+			TLegend *leg =
+				new TLegend(0.6 - pad->GetRightMargin(),
+				            1.0 - pad->GetTopMargin() - 0.15,
+				            1.0 - pad->GetRightMargin(),
+				            1.0 - pad->GetTopMargin());
+			leg->SetFillStyle(1);
+			leg->AddEntry(sig, "Signal", "F");
+			bkg->SetLineWidth(2);
+			leg->AddEntry(bkg, "Background", "F");
+			leg->SetBorderSize(1);
+			leg->SetMargin(0.3);
+			leg->Draw("same");
+		}
 
 		pad->RedrawAxis();
 		Save(pad, dir, name);
