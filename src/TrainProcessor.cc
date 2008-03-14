@@ -22,11 +22,17 @@ TrainProcessor::~TrainProcessor()
 
 void TrainProcessor::doTrainBegin()
 {
+	bool booked = false;
+
 	if (!monitoring) {
 		monitoring = trainer->bookMonitor(name + "_" +
 		                                  (const char*)getName());
 		monModule = trainer->bookMonitor(std::string("input_") +
 		                                 (const char*)getName());
+		booked = monitoring != 0;
+	}
+
+	if (booked) {
 		std::vector<SourceVariable*> inputs = getInputs().get();
 		for(std::vector<SourceVariable*>::const_iterator iter =
 			inputs.begin(); iter != inputs.end(); ++iter) {
