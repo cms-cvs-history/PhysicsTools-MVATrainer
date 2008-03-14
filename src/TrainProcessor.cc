@@ -57,9 +57,10 @@ void TrainProcessor::doTrainBegin()
 }
 
 void TrainProcessor::doTrainData(const std::vector<double> *values,
-                                 bool target, double weight)
+                                 bool target, double weight,
+                                 bool train, bool test)
 {
-	if (monModule) {
+	if (monModule && test) {
 		for(std::vector<SigBkg>::const_iterator iter =
 			monHistos.begin(); iter != monHistos.end(); ++iter) {
 
@@ -73,7 +74,10 @@ void TrainProcessor::doTrainData(const std::vector<double> *values,
 		}
 	}
 
-	trainData(values, target, weight);
+	if (train)
+		trainData(values, target, weight);
+	if (test)
+		testData(values, target, weight, train);
 }
 
 void TrainProcessor::doTrainEnd()

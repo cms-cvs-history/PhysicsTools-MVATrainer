@@ -56,7 +56,7 @@ class TrainProcessor : public Source,
 
 	void doTrainBegin();
 	void doTrainData(const std::vector<double> *values,
-	                 bool target, double weight);
+	                 bool target, double weight, bool train, bool test);
 	void doTrainEnd();
 
 	virtual bool load() { return true; }
@@ -69,6 +69,8 @@ class TrainProcessor : public Source,
 	virtual void trainBegin() {}
 	virtual void trainData(const std::vector<double> *values,
 	                       bool target, double weight) {}
+	virtual void testData(const std::vector<double> *values,
+	                      bool target, double weight, bool trainedOn) {}
 	virtual void trainEnd() {}
 
 	virtual void *requestObject(const std::string &name) const
