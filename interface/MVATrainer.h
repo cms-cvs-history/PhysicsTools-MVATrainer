@@ -98,7 +98,7 @@ class MVATrainer {
 	std::vector<SourceVariable*>		variables;
 	std::vector<AtomicId>			processors;
 	Source					*input;
-	Source					*output;
+	TrainProcessor				*output;
 
 	std::auto_ptr<TrainerMonitoring>	monitoring;
 	std::auto_ptr<XMLDocument>		xml;

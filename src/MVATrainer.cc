@@ -321,6 +321,8 @@ void MVATrainerComputer::done()
 const AtomicId MVATrainer::kTargetId("__TARGET__");
 const AtomicId MVATrainer::kWeightId("__WEIGHT__");
 
+static const AtomicId kOutputId("__OUTPUT__");
+
 MVATrainer::MVATrainer(const std::string &fileName) :
 	input(0), output(0), name("MVATrainer"),
 	doAutoSave(true), doCleanup(false), doMonitoring(false),
@@ -402,7 +404,9 @@ MVATrainer::MVATrainer(const std::string &fileName) :
 		    }	break;
 		    case STATE_MIDDLE: {
 			if (name == "output") {
-				output = new Source(0);
+				AtomicId zero;
+				output = new TrainProcessor("output",
+				                            &zero, this);
 				fillInputVars(output->getInputs(), elem);
 				state = STATE_LAST;
 				continue;
@@ -693,10 +697,12 @@ void MVATrainer::fillOutputVars(SourceVariableSet &vars, Source *source,
 		Variable::Flags flags = Variable::FLAG_NONE;
 
 		if (XMLDocument::readAttribute<bool>(elem, "optional", true))
-			(int&)flags |= Variable::FLAG_OPTIONAL;
+			flags = (PhysicsTools::Variable::Flags)
+				(flags | Variable::FLAG_OPTIONAL);
 
 		if (XMLDocument::readAttribute<bool>(elem, "multiple", true))
-			(int&)flags |= Variable::FLAG_MULTIPLE;
+			flags = (PhysicsTools::Variable::Flags)
+				(flags | Variable::FLAG_MULTIPLE);
 
 		SourceVariable *var = createVariable(source, name, flags);
 		if (!var)
@@ -814,11 +820,15 @@ MVATrainer::makeTrainCalibration(const AtomicId *compute,
 	interceptors.push_back(new InitInterceptor);
 
 	for(const AtomicId *iter = train; *iter; iter++) {
-		std::map<AtomicId, Source*>::const_iterator pos =
+		TrainProcessor *source;
+		if (*iter == kOutputId)
+			source = output;
+		else {
+			std::map<AtomicId, Source*>::const_iterator pos =
 							sources.find(*iter);
-		assert(pos != sources.end());
-		TrainProcessor *source =
-				dynamic_cast<TrainProcessor*>(pos->second);
+			assert(pos != sources.end());
+			source = dynamic_cast<TrainProcessor*>(pos->second);
+		}
 		assert(source);
 
 		interceptors.push_back(new TrainInterceptor(source));
@@ -941,6 +951,10 @@ void MVATrainer::findUntrainedComputers(std::vector<AtomicId> &compute,
 		} else
 			train.push_back(proc->getName());
 	}
+
+	if (doMonitoring && !output->isTrained() &&
+	    output->getInputs().get()[0]->getSource()->isTrained())
+		train.push_back(kOutputId);
 }
 
 Calibration::MVAComputer *MVATrainer::getTrainCalibration() const
