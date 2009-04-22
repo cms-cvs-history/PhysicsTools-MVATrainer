@@ -5,3 +5,10 @@
   <use name=rootcintex>
   <use name=rootcore>
 </bin>
+<bin name="mvaTreeComputer" file="mvaTreeComputer.cpp">
+  <use name=FWCore/Utilities>
+  <use name=PhysicsTools/MVAComputer>
+  <use name=PhysicsTools/MVATrainer>
+  <use name=rootcintex>
+  <use name=rootcore>
+</bin>
