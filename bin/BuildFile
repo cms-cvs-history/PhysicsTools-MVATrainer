@@ -1,5 +1,6 @@
 <bin name="mvaTreeTrainer" file="mvaTreeTrainer.cpp">
   <use name=FWCore/Utilities>
+  <use name=FWCore/PluginManager>
   <use name=PhysicsTools/MVAComputer>
   <use name=PhysicsTools/MVATrainer>
   <use name=rootcintex>
@@ -7,6 +8,7 @@
 </bin>
 <bin name="mvaTreeComputer" file="mvaTreeComputer.cpp">
   <use name=FWCore/Utilities>
+  <use name=FWCore/PluginManager>
   <use name=PhysicsTools/MVAComputer>
   <use name=rootcintex>
   <use name=rootcore>
